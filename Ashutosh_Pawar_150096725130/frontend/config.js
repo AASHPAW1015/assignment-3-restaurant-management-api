@@ -6,7 +6,7 @@ const isLocal =
 
 const API_BASE_URL = isLocal
   ? "http://localhost:3000"
-  : "RENDER_URL_HERE";
+  : "https://assignment-3-restaurant-management-api-j0s9.onrender.com";
 
 // fetch wrapper: adds the JWT if we have one and returns { response, data }
 function callApi(path, method, body) {

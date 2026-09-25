@@ -3,7 +3,16 @@
 Assignment 3 — Ashutosh Pawar (150096725130)
 
 A restaurant management REST API built with Express and MongoDB, with JWT authentication
-on all write routes. Restaurants own menu items through a foreign key.
+on all write routes. Restaurants own menu items through a foreign key. A simple HTML
+frontend in `frontend/` uses the API.
+
+## Live demo
+
+- Frontend (Vercel): https://restaurant-webapp-omega.vercel.app
+- API (Render): https://assignment-3-restaurant-management-api-j0s9.onrender.com
+
+The API runs on Render's free tier, so the first request after a period of inactivity
+can take up to a minute while the server wakes up.
 
 ## Tech stack
 
@@ -12,6 +21,8 @@ on all write routes. Restaurants own menu items through a foreign key.
 - jsonwebtoken for auth tokens
 - bcryptjs for password hashing
 - dotenv for config
+- cors so the frontend can call the API from another domain
+- Frontend: plain HTML + JavaScript, SweetAlert2 for alerts (no build step)
 
 ## Project structure
 
@@ -34,6 +45,14 @@ Ashutosh_Pawar_150096725130/
 ├── middleware/
 │   ├── auth.js                   # Bearer token check
 │   └── logger.js                 # request logger
+├── frontend/
+│   ├── config.js                 # API URL + shared fetch helper
+│   ├── index.html                # home: register / login
+│   ├── register.html
+│   ├── login.html                # stores the JWT in localStorage
+│   ├── restaurants.html          # list, top 5, delete
+│   ├── restaurant-form.html      # add / edit a restaurant
+│   └── menu.html                 # a restaurant's menu items
 ├── api.http                      # sample requests
 ├── .env.example                  # environment template
 └── server.js                     # app entry, port 3000
@@ -52,6 +71,10 @@ npm start          # or: npm run dev
 
 Server runs at `http://localhost:3000`.
 
+**Frontend:** open `frontend/index.html` in the browser, or serve the folder
+(e.g. `npx serve frontend`). When opened locally it talks to `http://localhost:3000`,
+otherwise to the Render URL set in `frontend/config.js`.
+
 ### Environment variables
 
 | Variable | Notes |
@@ -60,6 +83,13 @@ Server runs at `http://localhost:3000`.
 | `MONGO_URI` | MongoDB connection string |
 | `JWT_SECRET` | secret used to sign tokens |
 | `JWT_EXPIRES_IN` | token lifetime, e.g. `1h` |
+
+## Deployment
+
+- **API** on Render: root directory `Ashutosh_Pawar_150096725130`, build `npm install`,
+  start `npm start`. Set `MONGO_URI` (MongoDB Atlas), `JWT_SECRET` and `JWT_EXPIRES_IN`.
+  Render provides `PORT`.
+- **Frontend** on Vercel: the `frontend/` folder deployed as static files.
 
 ## Data models
 
