@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Restaurants</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="config.js"></script>
+  </head>
+  <body>
+    <h1 id="heading">Restaurants</h1>
+
+    <table border="1">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>City</th>
+          <th>Address</th>
+          <th>Cuisine</th>
+          <th>Rating</th>
+          <th>MENU</th>
+          <th>EDIT</th>
+          <th>DELETE</th>
+        </tr>
+      </thead>
+      <tbody id="restaurant-rows"></tbody>
+    </table>
+
+    <br />
+
+    <button onclick="location.href = 'restaurant-form.html'">ADD</button>
+    <button id="toggle-top" onclick="toggleTop()">TOP 5</button>
+    <button onclick="handleLogout()">LOGOUT</button>
+
+    <script>
+      let showingTop = false;
+
+      function loadRestaurants() {
+        const path = showingTop ? "/restaurants/top" : "/restaurants";
+
+        callApi(path)
+          .then(({ data }) => {
+            console.log(data);
+            const rows = document.getElementById("restaurant-rows");
+            rows.innerHTML = "";
+
+            data.forEach((r) => {
+              const tr = document.createElement("tr");
+
+              [r.name, r.city, r.address, r.cuisine, r.rating].forEach(
+                (value) => {
+                  const td = document.createElement("td");
+                  td.textContent = value;
+                  tr.appendChild(td);
+                },
+              );
+
+              tr.appendChild(
+                buttonCell("MENU", () => {
+                  location.href = `menu.html?id=${r._id}`;
+                }),
+              );
+              tr.appendChild(
+                buttonCell("EDIT", () => {
+                  location.href = `restaurant-form.html?id=${r._id}`;
+                }),
+              );
+              tr.appendChild(buttonCell("DELETE", () => handleDelete(r._id)));
+
+              rows.appendChild(tr);
+            });
+          })
+          .catch((error) => {
+            console.log(error);
+            showError("could not load restaurants!");
+          });
+      }
+
+      function buttonCell(label, onClick) {
+        const td = document.createElement("td");
+        const button = document.createElement("button");
+        button.textContent = label;
+        button.onclick = onClick;
+        td.appendChild(button);
+        return td;
+      }
+
+      function toggleTop() {
+        showingTop = !showingTop;
+        document.getElementById("heading").textContent = showingTop
+          ? "Top 5 Restaurants"
+          : "Restaurants";
+        document.getElementById("toggle-top").textContent = showingTop
+          ? "SHOW ALL"
+          : "TOP 5";
+        loadRestaurants();
+      }
+
+      function handleDelete(id) {
+        Swal.fire({
+          icon: "warning",
+          title: "Are you sure?",
+          text: "this restaurant and its menu will be deleted",
+          showCancelButton: true,
+          confirmButtonText: "Yes, delete it",
+        }).then((result) => {
+          if (!result.isConfirmed) {
+            return;
+          }
+
+          callApi(`/restaurants/${id}`, "DELETE")
+            .then(({ response, data }) => {
+              console.log(data);
+
+              if (handleUnauthorized(response, data)) {
+                return;
+              }
+
+              if (response.status === 200) {
+                showSuccess("restaurant deleted successfully");
+                loadRestaurants();
+              } else {
+                showError(data.message || "Something went wrong!");
+              }
+            })
+            .catch((error) => {
+              console.log(error);
+              showError("could not reach the server!");
+            });
+        });
+      }
+
+      function handleLogout() {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        location.href = "index.html";
+      }
+
+      if (requireLogin()) {
+        loadRestaurants();
+      }
+    </script>
+  </body>
+</html>

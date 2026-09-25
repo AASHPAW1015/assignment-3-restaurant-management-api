@@ -1,6 +1,7 @@
 require("dotenv").config({ quiet: true });
 
 const express = require("express");
+const cors = require("cors");
 const connectDB = require("./config/db");
 const logger = require("./middleware/logger");
 const authRouter = require("./routes/authRoutes");
@@ -9,6 +10,7 @@ const menuRouter = require("./routes/menuRoutes");
 
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 app.use(logger);
 

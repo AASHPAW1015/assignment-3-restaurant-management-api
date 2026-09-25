@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Menu</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="config.js"></script>
+  </head>
+  <body>
+    <h1 id="heading">Menu</h1>
+
+    <table border="1">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Price</th>
+          <th>Available</th>
+          <th>EDIT</th>
+          <th>DELETE</th>
+        </tr>
+      </thead>
+      <tbody id="menu-rows"></tbody>
+    </table>
+
+    <h2 id="form-heading">Add Menu Item</h2>
+
+    <div>
+      <label for="name">Name : </label>
+      <input type="text" id="name" />
+    </div>
+
+    <div>
+      <label for="price">Price : </label>
+      <input type="number" id="price" min="0" />
+    </div>
+
+    <div>
+      <label for="isAvailable">Available : </label>
+      <input type="checkbox" id="isAvailable" checked />
+    </div>
+
+    <br />
+
+    <div>
+      <button onclick="handleSubmit()">Submit</button>
+      <button onclick="resetForm()">Clear</button>
+      <button onclick="location.href = 'restaurants.html'">Back</button>
+    </div>
+
+    <script>
+      const restaurantId = new URLSearchParams(location.search).get("id");
+      // set when EDIT is clicked, null while adding
+      let editingItemId = null;
+
+      function loadRestaurantName() {
+        callApi(`/restaurants/${restaurantId}`)
+          .then(({ response, data }) => {
+            if (response.status === 200) {
+              document.getElementById("heading").textContent =
+                `Menu - ${data.name}`;
+            }
+          })
+          .catch((error) => console.log(error));
+      }
+
+      function loadMenu() {
+        callApi(`/restaurants/${restaurantId}/menu`)
+          .then(({ response, data }) => {
+            console.log(data);
+
+            if (response.status !== 200) {
+              showError(data.message || "could not load menu!");
+              return;
+            }
+
+            const rows = document.getElementById("menu-rows");
+            rows.innerHTML = "";
+
+            data.forEach((item) => {
+              const tr = document.createElement("tr");
+
+              [item.name, item.price, item.isAvailable ? "Yes" : "No"].forEach(
+                (value) => {
+                  const td = document.createElement("td");
+                  td.textContent = value;
+                  tr.appendChild(td);
+                },
+              );
+
+              tr.appendChild(buttonCell("EDIT", () => startEdit(item)));
+              tr.appendChild(
+                buttonCell("DELETE", () => handleDelete(item._id)),
+              );
+
+              rows.appendChild(tr);
+            });
+          })
+          .catch((error) => {
+            console.log(error);
+            showError("could not load menu!");
+          });
+      }
+
+      function buttonCell(label, onClick) {
+        const td = document.createElement("td");
+        const button = document.createElement("button");
+        button.textContent = label;
+        button.onclick = onClick;
+        td.appendChild(button);
+        return td;
+      }
+
+      function startEdit(item) {
+        editingItemId = item._id;
+        document.getElementById("form-heading").textContent = "Edit Menu Item";
+        document.getElementById("name").value = item.name;
+        document.getElementById("price").value = item.price;
+        document.getElementById("isAvailable").checked = item.isAvailable;
+      }
+
+      function resetForm() {
+        editingItemId = null;
+        document.getElementById("form-heading").textContent = "Add Menu Item";
+        document.getElementById("name").value = "";
+        document.getElementById("price").value = "";
+        document.getElementById("isAvailable").checked = true;
+      }
+
+      function handleSubmit() {
+        const price = document.getElementById("price").value;
+        const body = {
+          name: document.getElementById("name").value,
+          price: price === "" ? undefined : Number(price),
+          isAvailable: document.getElementById("isAvailable").checked,
+        };
+
+        const request = editingItemId
+          ? callApi(`/menu/${editingItemId}`, "PUT", body)
+          : callApi(`/restaurants/${restaurantId}/menu`, "POST", body);
+
+        request
+          .then(({ response, data }) => {
+            console.log(data);
+
+            if (handleUnauthorized(response, data)) {
+              return;
+            }
+
+            if (response.status === 200 || response.status === 201) {
+              showSuccess(data.message);
+              resetForm();
+              loadMenu();
+            } else {
+              showError(data.message || "Something went wrong!");
+            }
+          })
+          .catch((error) => {
+            console.log(error);
+            showError("could not reach the server!");
+          });
+      }
+
+      function handleDelete(itemId) {
+        Swal.fire({
+          icon: "warning",
+          title: "Are you sure?",
+          text: "this menu item will be deleted",
+          showCancelButton: true,
+          confirmButtonText: "Yes, delete it",
+        }).then((result) => {
+          if (!result.isConfirmed) {
+            return;
+          }
+
+          callApi(`/menu/${itemId}`, "DELETE")
+            .then(({ response, data }) => {
+              console.log(data);
+
+              if (handleUnauthorized(response, data)) {
+                return;
+              }
+
+              if (response.status === 200) {
+                showSuccess("menu item deleted successfully");
+                loadMenu();
+              } else {
+                showError(data.message || "Something went wrong!");
+              }
+            })
+            .catch((error) => {
+              console.log(error);
+              showError("could not reach the server!");
+            });
+        });
+      }
+
+      if (requireLogin()) {
+        loadRestaurantName();
+        loadMenu();
+      }
+    </script>
+  </body>
+</html>
